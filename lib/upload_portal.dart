@@ -80,9 +80,9 @@ class _UploadPortalState extends State<UploadPortal> {
         throw Exception("EMPTY_DOCUMENT: The PDF contains no extractable text. Please use a document with searchable text.");
       }
 
-      const apiKey = "use your api key hear";
-      // Synchronized with Fiscal-A: Using Gemini 2.5 Flash as requested
-      final model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
+      const apiKey = "use your api key here";
+      // Synchronized with Fiscal-A: Using Gemini 1.5 Flash as requested
+      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
 
       // 1.5 CARRIER IMAGE PROTOCOL (STRICT SCAN)
       if (_isSecureAccess && _coverImage != null) {
@@ -250,7 +250,7 @@ class _UploadPortalState extends State<UploadPortal> {
                 title: const Text("Verified Privacy Mode", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 subtitle: const Text("Hides material within a cover image", style: TextStyle(fontSize: 11)),
                 value: _isSecureAccess,
-                activeColor: Colors.indigo,
+                activeThumbColor: Colors.indigo,
                 onChanged: (v) => setState(() => _isSecureAccess = v),
               ),
               if (_isSecureAccess) ...[
@@ -267,7 +267,7 @@ class _UploadPortalState extends State<UploadPortal> {
                 title: const Text("Project Showcase", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 subtitle: const Text("Feature this as a student technical project", style: TextStyle(fontSize: 11)),
                 value: _isProjectShowcase,
-                activeColor: Colors.deepPurple,
+                activeThumbColor: Colors.deepPurple,
                 onChanged: (v) => setState(() => _isProjectShowcase = v),
               ),
 
