@@ -338,7 +338,7 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                   ),
                   Switch(
                     value: _currentStatus != UserStatus.foundation,
-                    activeThumbColor: primaryColor,
+                    activeColor: primaryColor,
                     onChanged: (v) {
                       setState(() => _currentStatus = v ? UserStatus.contributor : UserStatus.foundation);
                       _refreshStream();
