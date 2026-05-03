@@ -6,7 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:image/image.dart' as img;
 
 class SteganoEngine {
-  static final _key = encrypt.Key.fromUtf8('A3C9_VAULT_SECURITY_PROT0COL_256');
+  static final _key = encrypt.Key.fromUtf8('GENERIC_SECRET_KEY_1234567890123');
   static final _iv = encrypt.IV.fromLength(16);
   static final _encrypter = encrypt.Encrypter(encrypt.AES(_key));
 
