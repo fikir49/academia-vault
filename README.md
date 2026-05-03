@@ -1,72 +1,62 @@
 # 🏛 Academia Vault: The Intelligent Knowledge Stream
 
-**Academia Vault** is a state-of-the-art decentralized, AI-augmented academic ecosystem built with Flutter. It reimagines academic material management by transitioning from static file storage to a dynamic, secure, and peer-to-peer **"Knowledge Mesh."**
+[![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+**Academia Vault** is a decentralized, AI-augmented academic ecosystem built with Flutter. It moves beyond static file storage to create a **"Living Knowledge Mesh"**—where academic materials are semantically ranked, securely hidden, and distributed across a peer-to-peer network without the need for a central server.
 
 ---
 
-## 🚀 Key Features in Detail
+## ✨ Evolutionary Features
 
-### 1. 🧠 AI-Powered Semantic Ranking Engine
-The Vault doesn't just store files; it understands them.
-*   **Vector Space Modeling (VSM):** Implements advanced **Cosine Similarity** algorithms to rank document relevance against a globally broadcasted university syllabus.
-*   **AI Auditor Protocol:** Leverages **Gemini 2.5 Flash** to perform real-time academic integrity scans. It evaluates material relevance and ethical compliance before allowing content into the ecosystem.
-*   **Dynamic Re-Ranking:** When an administrator updates the "Global Syllabus," the entire local knowledge stream automatically re-ranks materials to align with new learning objectives.
+### 🧠 1. Semantic Ranking Engine (V.S.M.)
+Unlike traditional search engines that rely on keyword matching, Academia Vault understands the **context** of your studies.
+*   **Vector Space Modeling:** Every document is converted into a mathematical vector. The app calculates the **Cosine Similarity** between your current syllabus and the document's "Knowledge DNA."
+*   **AI-Driven Integrity:** Integrated with **Gemini 2.5 Flash**, the app acts as an automated "Academic Auditor," verifying that uploaded materials are relevant, ethical, and high-quality before they enter the stream.
 
-### 2. 🔐 "Invisible" Security (Steganographic Vault)
-Privacy is integrated into the pixels of the app.
-*   **LSB Pixel Weaving:** Sensitive academic documents are encrypted using **AES-256** and then "woven" into the Least Significant Bits (LSB) of standard carrier images (PNG/JPG).
-*   **Carrier Audit:** The AI Auditor scans cover images to ensure they meet professional standards (e.g., no identifiable faces or inappropriate content) before they can be used as vaults.
-*   **Zero-Trace Storage:** Encrypted payloads are indistinguishable from normal image data, making them invisible to standard file explorers and gallery apps.
+### 🔐 2. Invisible Vaults (LSB Steganography)
+True privacy means no one even knows your data exists.
+*   **Pixel-Level Encryption:** Sensitive files are encrypted via **AES-256** and then woven into the **Least Significant Bits (LSB)** of standard images (PNG/JPG).
+*   **Carrier Protocol:** The AI-Auditor scans potential "cover images" for privacy violations (like faces or PII) before allowing them to be used as data vaults.
+*   **Zero-Footprint:** Your academic PDFs are hidden inside harmless-looking photos in your gallery.
 
-### 3. 🌐 Decentralized Peer-to-Peer Network
-A serverless architecture designed for campus environments.
-*   **mDNS Peer Discovery:** Uses **Network Service Discovery (NSD)** to automatically detect other "Knowledge Nodes" on the same local network (Wi-Fi/LAN) without requiring a central server.
-*   **Pied Piper Sharding Protocol:** Large technical projects are broken into encrypted binary shards and distributed across the peer network. This ensures high availability and redundancy through collective hosting.
-*   **Real-time Topology:** The dashboard features a live "Network Heatmap" visualizing active nodes and shard distribution health.
+### 🌐 3. Decentralized "Pied Piper" Network
+Built for resilience in campus environments where internet might be restricted.
+*   **mDNS Peer Discovery:** Uses **Network Service Discovery (NSD)** to find other scholars on the same Wi-Fi/LAN automatically.
+*   **Shard Distribution:** Projects are broken into mathematical shards and distributed across available nodes. This ensures that even if one device goes offline, the knowledge remains accessible through the mesh.
+*   **P2P Protocol:** A custom TCP-based stream handles the transfer of binary fragments between devices in real-time.
 
-### 4. ⚡ High-Performance Architecture
-*   **Offline-First Logic:** Built on **Hive NoSQL**, ensuring lightning-fast local retrieval and full functionality even without an active internet connection.
-*   **Material 3 Fluid UI:** A highly polished, glassmorphic interface that provides a premium, intuitive user experience for both students and lecturers.
-*   **Biometric Authorization:** Access to the "Secure Vault" is protected by device-level biometrics (FaceID/Fingerprint), triggering the decryption protocol only for authorized users.
-
----
-
-## 🛠 Tech Stack & Logic
-- **Framework:** Flutter (Material 3, Glassmorphism)
-- **Database:** Hive NoSQL (Persistence)
-- **AI Intelligence:** Google Generative AI (Gemini 2.5 Flash)
-- **Security:** AES-256 Encryption & LSB Steganography
-- **Discovery:** NSD / mDNS (Local P2P)
-- **Extraction:** OpenFilex & Syncfusion PDF
+### ⚡ 4. High-Performance Local Intelligence
+*   **Hive NoSQL Persistence:** Optimized for sub-millisecond data retrieval.
+*   **Biometric Authorization:** The vault protocol only triggers de-pixelation after a successful fingerprint or face scan.
+*   **Offline Maturity:** All mathematical ranking and secure storage logic works 100% offline.
 
 ---
 
-## 📂 Project Structure
-- `lib/ranking_engine.dart`: The mathematical core for Vector Space Modeling.
-- `lib/security_engine.dart`: The steganography and encryption logic.
-- `lib/network_discovery.dart`: Peer discovery and sharding protocols.
-- `lib/upload_portal.dart`: AI-integrated material intake and auditing.
+## 📖 Deep Dives
+To understand the underlying mathematics and logic of this project, please refer to our supplemental documentation:
+
+*   **[PROTOCOL_SPEC.md](./PROTOCOL_SPEC.md)**: A deep dive into the VSM Math, Steganographic Algorithms, and P2P Sharding Logic.
+*   **[AI_CONTEXT.md](./AI_CONTEXT.md)**: Details on the Gemini Auditor's prompt engineering and ethical constraints.
 
 ---
 
-## ⚙️ Setup & Installation
-1.  **Clone the Repository:**
+## 🚀 Getting Started
+
+1.  **Clone & Fetch:**
     ```bash
-    git clone https://github.com/yourusername/academia_vault.git
-    ```
-2.  **Add API Key:**
-    Open `lib/upload_portal.dart` and replace `use your api key hear` with your valid **Gemini API Key**.
-3.  **Install Dependencies:**
-    ```bash
+    git clone https://github.com/fikir49/academia-vault.git
     flutter pub get
     ```
-4.  **Run the App:**
+2.  **API Configuration:**
+    Navigate to `lib/upload_portal.dart` and insert your Gemini API Key in the `apiKey` field.
+3.  **Build Release:**
     ```bash
-    flutter run
+    flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
     ```
 
-## 📜 License
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
 ---
-**Developed by FIKIR WENDMNEW** | *Building the future of Decentralized Academic Intelligence.*
+
+## 📜 License & Acknowledgments
+Distributed under the **MIT License**. Created by **FIKIR WENDMNEW** as a vision for the future of decentralized academic intelligence.
