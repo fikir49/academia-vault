@@ -518,17 +518,18 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("LIVE_NETWORK_TOPOLOGY", style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: primaryColor, letterSpacing: 1)),
-                  Text("$_activeNodesCount NODES DISCOVERED", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  Text("$_activeNodesCount NODES DISCOVERED", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87)),
                 ],
               ),
             ),
-            const Positioned(
+            Positioned(
               right: 20, bottom: 15,
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.circle, size: 8, color: Colors.green),
-                  SizedBox(width: 5),
-                  Text("SHARDED_STREAM_ACTIVE", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green)),
+                  const Icon(Icons.circle, size: 8, color: Colors.green),
+                  const SizedBox(width: 5),
+                  Text("STREAM_ACTIVE", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
             )
@@ -576,13 +577,23 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
         children: [
           Icon(icon, size: 14, color: primaryColor.withValues(alpha: 0.5)),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 7, color: Colors.black38, fontWeight: FontWeight.w900)),
-              Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primaryColor)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 7, color: Colors.black38, fontWeight: FontWeight.w900),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primaryColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           )
         ],
       ),
@@ -631,28 +642,48 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(icon: Icon(_isSidebarOpen ? Icons.close : Icons.menu_open, color: primaryColor), onPressed: () => setState(() => _isSidebarOpen = !_isSidebarOpen)),
-          Row(
-            children: [
-              Image.asset(
-                'assets/images/app_logo.png',
-                height: 24,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-              ),
-              const SizedBox(width: 8),
-              Text("ACADEMIA VAULT", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: primaryColor)),
-            ],
+          IconButton(
+            icon: Icon(_isSidebarOpen ? Icons.close : Icons.menu_open, color: primaryColor),
+            onPressed: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    height: 24,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Flexible(
+                  child: Text(
+                    "ACADEMIA VAULT",
+                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (_currentStatus == UserStatus.administrator)
-                IconButton(icon: const Icon(Icons.admin_panel_settings_outlined, color: Colors.deepPurple), onPressed: _showAdminTerminal),
+                IconButton(
+                  icon: const Icon(Icons.admin_panel_settings_outlined, color: Colors.deepPurple, size: 20),
+                  onPressed: _showAdminTerminal,
+                ),
               if (_currentStatus == UserStatus.contributor || _currentStatus == UserStatus.administrator)
-                IconButton(icon: Icon(Icons.add_circle_outline, color: primaryColor, size: 28), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const UploadPortal())))
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline, color: primaryColor, size: 24),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const UploadPortal())),
+                )
               else
-                const SizedBox(width: 48),
+                const SizedBox(width: 40),
             ],
           ),
         ],
@@ -710,13 +741,39 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
   }
 
   Widget _buildWelcomeSection() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+    final hour = DateTime.now().hour;
+    String greeting = "Good Morning";
+    if (hour >= 12 && hour < 17) greeting = "Good Afternoon";
+    if (hour >= 17) greeting = "Good Evening";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Hello, Scholar.", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-          Text("The highest study matches for your department:", style: TextStyle(color: Colors.black45, fontSize: 13)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("$greeting, Scholar.", 
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.5)),
+                  const Text("The highest study matches for your department:", 
+                    style: TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]
+                ),
+                child: const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+              )
+            ],
+          ),
         ],
       ),
     );
@@ -758,23 +815,35 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _badge(insight.department, primaryColor.withValues(alpha: 0.1), primaryColor),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(_savedItemIds.contains(insight.id) ? Icons.bookmark : Icons.bookmark_border, size: 16, color: primaryColor),
-                        onPressed: () => setState(() {
-                          if (_savedItemIds.contains(insight.id)) {
-                            _savedItemIds.remove(insight.id);
-                          } else {
-                            _savedItemIds.add(insight.id);
-                          }
-                        }),
-                      ),
-                      const Icon(Icons.analytics_outlined, size: 10, color: Colors.green),
-                      const SizedBox(width: 4),
-                      Text("${(insight.matchRate * 100).toInt()}% Match", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.green)),
-                    ],
+                  Flexible(child: _badge(insight.department, primaryColor.withValues(alpha: 0.1), primaryColor)),
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(_savedItemIds.contains(insight.id) ? Icons.bookmark : Icons.bookmark_border, size: 16, color: primaryColor),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => setState(() {
+                            if (_savedItemIds.contains(insight.id)) {
+                              _savedItemIds.remove(insight.id);
+                            } else {
+                              _savedItemIds.add(insight.id);
+                            }
+                          }),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.analytics_outlined, size: 10, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            "${(insight.matchRate * 100).toInt()}% Match",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.green),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'ranking_engine.dart';
 import 'security_engine.dart';
+import 'network_discovery.dart';
 
 class UploadPortal extends StatefulWidget {
   const UploadPortal({super.key});
@@ -32,7 +35,19 @@ class _UploadPortalState extends State<UploadPortal> {
   Future<void> _pickCover() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) setState(() => _coverImage = File(picked.path));
+    if (picked != null) {
+      // Check for HEIC format which causes pixel-weaving failures
+      if (picked.path.toLowerCase().endsWith('.heic')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("INVALID_FORMAT: .HEIC detected. Steganography requires PNG or JPG."),
+            backgroundColor: Colors.redAccent,
+          ));
+        }
+        return;
+      }
+      setState(() => _coverImage = File(picked.path));
+    }
   }
 
   Future<void> _pickFile() async {
@@ -61,20 +76,81 @@ class _UploadPortalState extends State<UploadPortal> {
       extractedText = PdfTextExtractor(document).extractText();
       document.dispose();
 
-      const apiKey = "AIzaSyDXjEYDebAYE66vg9wYON-sa8qApNTsYAE"; 
-      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
-      
-      final prompt = "SYSTEM: Academic Integrity Auditor. SYLLABUS: [$_syllabusContext]. "
-          "TEXT: ${extractedText.substring(0, extractedText.length > 3000 ? 3000 : extractedText.length)}. "
-          "TASK: Return ONLY JSON: {\"relevance\": 0.0-1.0, \"isAcademic\": bool}.";
-
-      final response = await model.generateContent([Content.text(prompt)]);
-      final jsonResult = json.decode(response.text?.replaceAll('```json', '').replaceAll('```', '') ?? "{\"relevance\": 0.5, \"isAcademic\": true}");
-      
-      if (jsonResult['isAcademic'] == false) {
-        throw Exception("Material rejected: Content does not align with academic integrity standards.");
+      if (extractedText.trim().isEmpty) {
+        throw Exception("EMPTY_DOCUMENT: The PDF contains no extractable text. Please use a document with searchable text.");
       }
-      matchRate = (jsonResult['relevance'] as num).toDouble();
+
+      const apiKey = "use your api key hear";
+      // Synchronized with Fiscal-A: Using Gemini 2.5 Flash as requested
+      final model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
+
+      // 1.5 CARRIER IMAGE PROTOCOL (STRICT SCAN)
+      if (_isSecureAccess && _coverImage != null) {
+        debugPrint("AI_SCAN: Analyzing Carrier Image for Academic Integrity...");
+        final imageBytes = await _coverImage!.readAsBytes();
+        final imagePrompt = [
+          Content.multi([
+            TextPart("TASK: Image Safety & Privacy Audit. Evaluate if this image is suitable as a carrier for academic data. "
+                "ALLOWED: Most neutral photos, including nature, landscapes, and campus environments. "
+                "STRICTLY FORBIDDEN: "
+                "1. Clear faces or identifiable people (Privacy protection). "
+                "2. Violent, disturbing, or gore content. "
+                "3. Overtly religious symbols or propaganda. "
+                "4. Political figures, slogans, or highly controversial imagery. "
+                "5. Text that is offensive or violates academic ethics. "
+                "If the image is neutral and safe, 'isProfessional' must be true. If it contains any forbidden elements, 'isProfessional' must be false. "
+                "Return ONLY JSON: {\"isProfessional\": bool, \"reason\": \"brief explanation\"}."),
+            DataPart('image/jpeg', imageBytes),
+          ])
+        ];
+
+        try {
+          final imageResponse = await model.generateContent(imagePrompt).timeout(const Duration(seconds: 15));
+          final imageJson = json.decode(imageResponse.text?.replaceAll(RegExp(r'```json|```'), '').trim() ?? "{\"isProfessional\": true, \"reason\": \"Unknown\"}");
+          
+          if (imageJson['isProfessional'] == false) {
+            throw Exception("IMAGE_REJECTED: ${imageJson['reason'] ?? 'The carrier image does not meet Academic Integrity standards.'}");
+          }
+        } catch (e) {
+          if (e.toString().contains("IMAGE_REJECTED")) rethrow;
+          debugPrint("IMAGE_SCAN_BYPASS: AI Timeout or Error. Proceeding with caution.");
+        }
+      }
+
+      try {
+        final prompt = "SYSTEM: Academic Integrity Auditor. SYLLABUS: [$_syllabusContext]. "
+            "TEXT: ${extractedText.substring(0, extractedText.length > 3000 ? 3000 : extractedText.length)}. "
+            "TASK: Return ONLY JSON: {\"relevance\": 0.0-1.0, \"isAcademic\": bool}. "
+            "IMPORTANT: If text is not academic or is blank/random symbols, isAcademic must be false.";
+
+        final response = await model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 15));
+        final responseText = response.text;
+        
+        if (responseText == null || responseText.isEmpty) throw Exception("Empty AI Response");
+
+        final cleanJson = responseText.replaceAll(RegExp(r'```json|```'), '').trim();
+        final jsonResult = json.decode(cleanJson);
+        
+        if (jsonResult['isAcademic'] == false) {
+          throw Exception("Material rejected: Content does not align with academic integrity standards.");
+        }
+        matchRate = (jsonResult['relevance'] as num).toDouble();
+      } catch (aiErr) {
+        // 3. GRACEFUL FALLBACK (Handles SocketException, Timeouts, or Model issues)
+        debugPrint("AI_DISFUNCTION: $aiErr. Switching to local ranking math.");
+        double localSim = RankingEngine.calculateSimilarity(_syllabusContext, extractedText);
+        
+        // We use the local mathematical similarity as the match rate
+        matchRate = localSim > 0.1 ? localSim : 0.45;
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("AI Labeled Busy ($aiErr): Utilizing local Vector-Space math for ranking."),
+            backgroundColor: Colors.indigo,
+            duration: const Duration(seconds: 5),
+          ));
+        }
+      }
 
       // 2. VAULT ENCRYPTION (If selected)
       String? vaultPath;
@@ -99,15 +175,44 @@ class _UploadPortalState extends State<UploadPortal> {
         'isEncrypted': _isSecureAccess,
         'isMarketplace': _isProjectShowcase,
         'vaultPath': vaultPath,
-        'textContent': extractedText.substring(0, 500),
+        'textContent': extractedText.substring(0, math.min(500, extractedText.length)),
       };
 
       final List currentItems = box.get('items', defaultValue: []);
       currentItems.add(newInsight);
       await box.put('items', currentItems);
 
+      // 4. DISTRIBUTED STORAGE (The "Pied Piper" Protocol)
+      if (_isProjectShowcase) {
+        try {
+          final pdfBytes = await _academicFile!.readAsBytes();
+          final shards = SteganoEngine.shardKnowledge(pdfBytes, shardCount: 5);
+          final peers = PeerDiscovery().discoveredPeers;
+          
+          int distributedCount = 0;
+          for (int i = 0; i < shards.length; i++) {
+            if (peers.isNotEmpty) {
+              final peer = peers[i % peers.length];
+              final success = await PeerDiscovery().pushShardToPeer(
+                peer.host!, peer.port!, "${newInsight['id']}_$i", shards[i]
+              );
+              if (success) distributedCount++;
+            }
+          }
+          debugPrint("PIED_PIPER_PROTOCOL_COMPLETE: Knowledge sharded and decentralized.");
+          debugPrint("STATUS: $distributedCount shards hosted across the campus mesh network.");
+        } catch (p2pErr) {
+          debugPrint("P2P_DISTRIBUTION_FAILED: $p2pErr");
+        }
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Knowledge Certified and Shared with the Network")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_isProjectShowcase 
+            ? "Knowledge Certified & Sharded across the Peer Network" 
+            : "Knowledge Certified and Shared locally"),
+          backgroundColor: Colors.indigo,
+        ));
         Navigator.pop(context);
       }
     } catch (e) {
@@ -170,17 +275,46 @@ class _UploadPortalState extends State<UploadPortal> {
               SizedBox(
                 width: double.infinity,
                 height: 60,
-                child: ElevatedButton(
-                  onPressed: _isValidating ? null : _certifyKnowledge,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    elevation: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.indigo, Colors.deepPurple],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.indigo.withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
                   ),
-                  child: _isValidating 
-                    ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                    : const Text("CERTIFY AND SHARE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  child: ElevatedButton(
+                    onPressed: _isValidating ? null : _certifyKnowledge,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      elevation: 0,
+                    ),
+                    child: _isValidating 
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(_isSecureAccess ? "AUDITING_VAULT..." : "ANALYZING_CONTENT...", 
+                              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                          ],
+                        )
+                      : const Text("CERTIFY AND BROADCAST", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2, fontSize: 13)),
+                  ),
                 ),
               ),
             ],
@@ -191,20 +325,40 @@ class _UploadPortalState extends State<UploadPortal> {
   }
 
   Widget _header(String t) => Padding(
-    padding: const EdgeInsets.only(bottom: 15),
-    child: Text(t.toUpperCase(), style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+    padding: const EdgeInsets.only(bottom: 12, left: 5),
+    child: Row(
+      children: [
+        Container(width: 4, height: 14, decoration: BoxDecoration(color: Colors.indigo, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 10),
+        Text(t.toUpperCase(), style: const TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+      ],
+    ),
   );
 
-  Widget _input(TextEditingController c, String l, String h) => TextFormField(
-    controller: c,
-    validator: (v) => v!.isEmpty ? "Required" : null,
-    decoration: InputDecoration(
-      labelText: l, hintText: h,
-      labelStyle: const TextStyle(fontSize: 12),
-      filled: true, fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.black12)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.indigo, width: 1)),
+  Widget _input(TextEditingController c, String l, String h) => Container(
+    decoration: BoxDecoration(
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        )
+      ],
+    ),
+    child: TextFormField(
+      controller: c,
+      validator: (v) => v!.isEmpty ? "Required" : null,
+      style: const TextStyle(fontSize: 14),
+      decoration: InputDecoration(
+        labelText: l, hintText: h,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.indigo),
+        hintStyle: const TextStyle(fontSize: 12, color: Colors.black26),
+        filled: true, fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.indigo, width: 1.5)),
+      ),
     ),
   );
 

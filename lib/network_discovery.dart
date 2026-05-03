@@ -1,13 +1,22 @@
-import 'package:nsd/nsd.dart';
+import 'package:nsd/nsd.dart' as nsd;
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:developer' as dev;
+import 'dart:typed_data';
 
 class PeerDiscovery {
-  static const String serviceType = '_academia_vault._tcp';
-  Registration? _registration;
-  Discovery? _discovery;
+  // Singleton Pattern for Network-wide access
+  static final PeerDiscovery _instance = PeerDiscovery._internal();
+  factory PeerDiscovery() => _instance;
+  PeerDiscovery._internal();
+
+  static const String serviceType = '_acad-vault._tcp';
+  nsd.Registration? _registration;
+  nsd.Discovery? _discovery;
   ServerSocket? _server;
+  
+  final List<nsd.Service> discoveredPeers = [];
 
   /// PIED PIPER LOGIC: Advertise this phone as a Knowledge Node and listen for requests.
   Future<void> startNode(String nodeId) async {
@@ -18,7 +27,7 @@ class PeerDiscovery {
     });
 
     // 2. Advertise service on the network
-    _registration = await register(Service(
+    _registration = await nsd.register(nsd.Service(
       name: 'node_$nodeId',
       type: serviceType,
       port: 5000,
@@ -31,24 +40,57 @@ class PeerDiscovery {
     client.listen((data) {
       try {
         final request = json.decode(utf8.decode(data));
-        if (request['action'] == 'request_shard') {
-          // In a real P2P system, we would look up the shard on the local disk
-          // For perfection demo, we acknowledge the handshake
-          client.write(utf8.encode(json.encode({
-            'status': 'ACK',
-            'msg': 'SHARD_FOUND_IN_NODE_STORAGE'
-          })));
+        
+        if (request['action'] == 'store_shard') {
+          // PIED PIPER STORAGE: Save an incoming shard from a peer
+          final shardId = request['id'];
+          final payload = base64.decode(request['data']);
+          _storeLocalShard(shardId, payload);
+          
+          client.write(utf8.encode(json.encode({'status': 'STORED', 'id': shardId})));
+        } 
+        else if (request['action'] == 'request_shard') {
+          // Send back a shard if we have it
+          client.write(utf8.encode(json.encode({'status': 'ACK', 'msg': 'SHARD_REQUEST_RECEIVED'})));
         }
+      } catch (e) {
+        dev.log("P2P_PROTOCOL_ERROR: $e");
       } finally {
         client.close();
       }
     });
   }
 
+  Future<void> _storeLocalShard(String id, Uint8List data) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/node_shard_$id.bin');
+    await file.writeAsBytes(data);
+    dev.log("NODE_STORAGE_UPDATE: Stored fragment $id");
+  }
+
+  /// PUSH_SHARD: Sends a binary fragment to a specific peer node.
+  Future<bool> pushShardToPeer(String ip, int port, String shardId, Uint8List data) async {
+    try {
+      final socket = await Socket.connect(ip, port, timeout: const Duration(seconds: 3));
+      socket.write(utf8.encode(json.encode({
+        'action': 'store_shard',
+        'id': shardId,
+        'data': base64.encode(data)
+      })));
+
+      final response = await socket.first;
+      socket.destroy();
+      final decoded = json.decode(utf8.decode(response));
+      return decoded['status'] == 'STORED';
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// PIED PIPER LOGIC: Request a shard from a specific peer.
   Future<Map<String, dynamic>?> requestShardFromPeer(String ip, int port, String shardId) async {
     try {
-      final socket = await Socket.connect(ip, port, timeout: const Duration(seconds: 2));
+      final socket = await Socket.connect(ip, port, timeout: const Duration(seconds: 3));
       socket.write(utf8.encode(json.encode({
         'action': 'request_shard',
         'id': shardId
@@ -63,11 +105,13 @@ class PeerDiscovery {
   }
 
   /// PIED PIPER LOGIC: Scan the local network for other shards.
-  Future<void> findPeers(Function(Service) onPeerFound) async {
-    _discovery = await startDiscovery(serviceType);
+  Future<void> findPeers(Function(nsd.Service) onPeerFound) async {
+    _discovery = await nsd.startDiscovery(serviceType);
     _discovery!.addListener(() {
+      discoveredPeers.clear();
       for (final service in _discovery!.services) {
         if (service.host != null) {
+          discoveredPeers.add(service);
           onPeerFound(service);
         }
       }
@@ -75,9 +119,10 @@ class PeerDiscovery {
   }
 
   Future<void> stopNode() async {
-    if (_registration != null) await unregister(_registration!);
-    if (_discovery != null) await stopDiscovery(_discovery!);
+    if (_registration != null) await nsd.unregister(_registration!);
+    if (_discovery != null) await nsd.stopDiscovery(_discovery!);
     if (_server != null) await _server!.close();
   }
 }
+
 

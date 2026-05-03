@@ -23,12 +23,20 @@ class SteganoEngine {
 
     // 2. LOAD CARRIER IMAGE
     final image = img.decodeImage(await carrierImage.readAsBytes());
-    if (image == null) throw Exception("INVALID_CARRIER_FORMAT");
+    if (image == null) {
+      throw Exception("INVALID_CARRIER_FORMAT: The selected image format (likely HEIC/HEIF) is not supported for pixel-weaving. Please use a standard PNG or JPG.");
+    }
 
     // 3. THE WEAVING LOGIC
     Uint8List dataToHide = Uint8List(4 + encryptedData.length);
     ByteData.view(dataToHide.buffer).setUint32(0, encryptedData.length);
     dataToHide.setRange(4, dataToHide.length, encryptedData);
+
+    // CAPACITY CHECK: 1 byte of payload needs 8 bits (3 pixels * 3 channels = 9 bits per iteration)
+    // Roughly 1 pixel stores 0.375 bytes.
+    if (dataToHide.length * 8 > image.width * image.height * 3) {
+      throw Exception("IMAGE_TOO_SMALL: The selected carrier image does not have enough pixel-density to hide this document. Please use a higher resolution image.");
+    }
 
     int bitIndex = 0;
     for (int y = 0; y < image.height; y++) {
