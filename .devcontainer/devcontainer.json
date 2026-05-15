@@ -1,0 +1,8 @@
+{
+  "name": "Flutter & Laravel",
+  "image": "ghcr.io/cirruslabs/flutter:stable",
+  "features": {
+    "ghcr.io/devcontainers/features/php:1": {}
+  },
+  "forwardPorts": [8000, 3000]
+}

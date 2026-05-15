@@ -20,7 +20,7 @@ dependencies:
   syncfusion_flutter_pdf: ^26.1.35
   open_filex: ^4.5.0
   archive: ^3.6.1
-  http: ^1.2.1
+  http: ^1.6.0
   image: ^4.2.0
   nsd: ^2.1.0
 
