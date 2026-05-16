@@ -1,7 +1,7 @@
 # 🏛️ Academia Vault: The IR Intelligence Engine
 
 <p align="center">
-  <b>A Decentralized Information Retrieval System for Bahir Dar University</b>
+  <b>A Decentralized Information Retrieval System </b>
 </p>
 
 ## 🎯 Project Overview
