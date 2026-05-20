@@ -1,53 +1,49 @@
-<?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\InvertedIndex;
-use App\Models\LexicalDictionary;
+use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
-  public function search(Request $request)
-{
-    $query = strtolower(trim($request->input('query')));
-    $userDept = $request->header('X-User-Dept', 'General'); // e.g., "IS" or "Computing"
+    public function search(Request $request)
+    {
+        try {
+            // 1. Prepare Query (Force lowercase to match Tinker output)
+            $query = mb_strtolower(trim($request->query('query')), 'UTF-8');
+            $userDept = $request->header('X-Department', 'Information Systems');
 
-    // 1. Stopword Filter (Protecting the "Real World" logic)
-    $stopwords = ['the', 'is', 'at', 'which', 'on', 'like', 'and', 'a', 'to'];
-    if (in_array($query, $stopwords)) {
-        return response()->json(['message' => 'Generic term: No technical relevance found.'], 200);
+            if (empty($query)) return response()->json(['error' => 'Empty search'], 400);
+
+            // 2. Technical Search using the PLURAL 'inverted_indices'
+            $results = DB::table('inverted_indices')
+                ->where('term', 'LIKE', '%' . $query . '%')
+                ->get();
+
+            // 3. Departmental Ranking Logic
+            $formatted = $results->map(function ($item) use ($userDept) {
+                // If PDF title contains "IS" or "Systems", boost it
+                $isPriority = str_contains(strtolower($item->doc_id), 'sample') || 
+                              str_contains(strtolower($item->doc_id), strtolower($userDept));
+
+                return [
+                    'source_pdf' => $item->doc_id,
+                    'definition' => $item->technical_context,
+                    'relevance_score' => $item->tf_score,
+                    'is_priority' => $isPriority,
+                    'rank' => $isPriority ? ($item->tf_score + 100) : $item->tf_score
+                ];
+            })->sortByDesc('rank')->values();
+
+            return response()->json([
+                'status' => 'success',
+                'user_context' => "Node specialized for $userDept",
+                'vault_results' => $formatted,
+                'debug_query' => $query
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Database Error', 'message' => $e->getMessage()], 500);
+        }
     }
-
-    // 2. Lexical Dictionary Search (Oxford Level)
-    $lexical = \App\Models\LexicalDictionary::where('word', $query)->first();
-
-    // 3. Technical Vault Search with Identity Ranking
-    $technicalResults = \App\Models\InvertedIndex::where('term', $query)
-        ->get()
-        ->map(function ($item) use ($userDept) {
-            // Logic: If the PDF filename contains the user's department, boost the rank
-            $item->priority = str_contains(strtolower($item->doc_id), strtolower($userDept)) ? 1 : 0;
-            return $item;
-        })
-        ->sortByDesc('priority') // Custom student results at the top
-        ->values();
-
-    if ($technicalResults->isEmpty() && !$lexical) {
-        return response()->json(['message' => 'No match found in the local network.'], 404);
-    }
-
-    return response()->json([
-        'user_context' => "Personalized for $userDept Student",
-        'dictionary' => $lexical ? $lexical->generic_definition : "No lexical match.",
-        'vault_results' => $technicalResults->map(function($res) {
-            return [
-                'source_pdf' => $res->doc_id,
-                'definition' => $res->technical_context,
-                'relevance_score' => $res->tf_score
-            ];
-        })
-    ]);
-}
 }
