@@ -11,10 +11,12 @@ return new class extends Migration
      */
    public function up()
 {
-    Schema::table('lexical_dictionary', function (Blueprint $table) {
-        $table->text('generic_definition')->nullable(); // The "Oxford" style meaning
-        $table->string('synonym')->nullable();           // The "Alternative" English word
-    });
+    if (Schema::hasTable('lexical_dictionary')) {
+        Schema::table('lexical_dictionary', function (Blueprint $table) {
+            $table->text('generic_definition')->nullable(); // The "Oxford" style meaning
+            $table->string('synonym')->nullable();           // The "Alternative" English word
+        });
+    }
 }
 
     /**
@@ -22,8 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('lexical_dictionary', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasTable('lexical_dictionary')) {
+            Schema::table('lexical_dictionary', function (Blueprint $table) {
+                //
+            });
+        }
     }
 };

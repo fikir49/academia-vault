@@ -1,30 +1,22 @@
-const API_BASE_URL = "https://verbose-dollop-v694jjpp6qp2x659-8000.app.github.dev/api/v1";
-
-// app/lib/api.ts
-
-// app/lib/api.ts
-
-export const searchVault = async (query: string, studentId: string, dept: string) => {
-    // I am using your EXACT URL from the previous message
-    const API_BASE_URL = "https://verbose-dollop-v694jjpp6qp2x659-8000.app.github.dev/api/v1";
-
+export const searchVault = async (query: string, dept: string = 'Information Systems') => {
     try {
-        const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}`, {
+        // Calls our standard local API endpoint—no cryptographic tokens needed!
+        const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`, {
             method: 'GET',
             headers: {
                 'X-Department': dept,
-                'Accept': 'application/json',
-            },
+                'Accept': 'application/json'
+            }
         });
 
         if (!response.ok) {
-            console.error("Server responded with error:", response.status);
-            return { error: "Vault node unreachable", status: response.status };
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        return data.vault_results || [];
     } catch (error) {
-        console.error("Fetch failed:", error);
-        return { error: "Connection failed", message: "Network bridge blocked" };
+        console.error("Frontend retrieval failure:", error);
+        return [];
     }
 };

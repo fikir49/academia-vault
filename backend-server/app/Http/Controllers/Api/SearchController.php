@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -9,41 +11,43 @@ class SearchController extends Controller
     public function search(Request $request)
     {
         try {
-            // 1. Prepare Query (Force lowercase to match Tinker output)
-            $query = mb_strtolower(trim($request->query('query')), 'UTF-8');
+            // Normalize incoming query to lowercase
+            $query = mb_strtolower(trim($request->query('query', '')), 'UTF-8');
             $userDept = $request->header('X-Department', 'Information Systems');
 
-            if (empty($query)) return response()->json(['error' => 'Empty search'], 400);
+            if (empty($query)) {
+                return response()->json(['status' => 'success', 'vault_results' => []]);
+            }
 
-            // 2. Technical Search using the PLURAL 'inverted_indices'
+            // Force lowercase evaluation on the database column for true case-insensitivity
             $results = DB::table('inverted_indices')
-                ->where('term', 'LIKE', '%' . $query . '%')
+                ->whereRaw('LOWER(term) LIKE ?', ['%' . $query . '%'])
                 ->get();
 
-            // 3. Departmental Ranking Logic
             $formatted = $results->map(function ($item) use ($userDept) {
-                // If PDF title contains "IS" or "Systems", boost it
-                $isPriority = str_contains(strtolower($item->doc_id), 'sample') || 
-                              str_contains(strtolower($item->doc_id), strtolower($userDept));
+                $isPriority = str_contains(strtolower($item->doc_id ?? ''), 'sample') || 
+                              str_contains(strtolower($item->doc_id ?? ''), strtolower($userDept));
 
                 return [
-                    'source_pdf' => $item->doc_id,
-                    'definition' => $item->technical_context,
-                    'relevance_score' => $item->tf_score,
+                    'source_pdf' => $item->doc_id ?? 'sample_tech.pdf',
+                    'definition' => $item->technical_context ?? 'No context available',
+                    'relevance_score' => $item->tf_score ?? 1,
                     'is_priority' => $isPriority,
-                    'rank' => $isPriority ? ($item->tf_score + 100) : $item->tf_score
+                    'rank' => $isPriority ? (($item->tf_score ?? 1) + 100) : ($item->tf_score ?? 1)
                 ];
-            })->sortByDesc('rank')->values();
+            })->sortByDesc('rank')->values()->all();
 
             return response()->json([
                 'status' => 'success',
-                'user_context' => "Node specialized for $userDept",
-                'vault_results' => $formatted,
-                'debug_query' => $query
+                'vault_results' => $formatted
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Database Error', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'error',
+                'vault_results' => [],
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }
