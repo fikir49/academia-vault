@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\TextProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,17 +12,25 @@ class SearchController extends Controller
     public function search(Request $request)
     {
         try {
-            // Normalize incoming query to lowercase
-            $query = mb_strtolower(trim($request->query('query', '')), 'UTF-8');
+            $queryText = $request->query('query', '');
             $userDept = $request->header('X-Department', 'Information Systems');
 
-            if (empty($query)) {
+            if (empty(trim($queryText))) {
                 return response()->json(['status' => 'success', 'vault_results' => []]);
             }
 
-            // Force lowercase evaluation on the database column for true case-insensitivity
+            $searchTokens = TextProcessor::tokenize($queryText);
+
+            if (empty($searchTokens)) {
+                return response()->json(['status' => 'success', 'vault_results' => []]);
+            }
+
+            $targetToken = reset($searchTokens);
+            $cleanToken = '%' . mb_strtolower($targetToken, 'UTF-8') . '%';
+
             $results = DB::table('inverted_indices')
-                ->whereRaw('LOWER(term) LIKE ?', ['%' . $query . '%'])
+                ->whereRaw('LOWER(term) LIKE ?', [$cleanToken])
+                ->orWhereRaw('LOWER(technical_context) LIKE ?', [$cleanToken])
                 ->get();
 
             $formatted = $results->map(function ($item) use ($userDept) {
@@ -31,9 +40,9 @@ class SearchController extends Controller
                 return [
                     'source_pdf' => $item->doc_id ?? 'sample_tech.pdf',
                     'definition' => $item->technical_context ?? 'No context available',
-                    'relevance_score' => $item->tf_score ?? 1,
+                    'relevance_score' => $item->tf_score ?? 1.0,
                     'is_priority' => $isPriority,
-                    'rank' => $isPriority ? (($item->tf_score ?? 1) + 100) : ($item->tf_score ?? 1)
+                    'rank' => $isPriority ? (($item->tf_score ?? 1.0) + 100) : ($item->tf_score ?? 1.0)
                 ];
             })->sortByDesc('rank')->values()->all();
 

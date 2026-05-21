@@ -1,0 +1,46 @@
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\DB;
+
+class TextProcessor
+{
+    /**
+     * Tokenize, clean, and dynamically translate input strings.
+     */
+    public static function tokenize($text)
+    {
+        if (empty(trim($text))) {
+            return [];
+        }
+
+        // 1. Normalize character casing and clean spaces
+        $cleaned = mb_strtolower(trim($text), 'UTF-8');
+        
+        // Remove trailing or accidental escape backslashes from frontend
+        $cleaned = str_replace('\\', '', $cleaned);
+
+        // 2. Simple Tokenization (Split by spaces/hyphens)
+        $rawTokens = preg_split('/[\s,-]+/', $cleaned, -1, PREG_SPLIT_NO_EMPTY);
+        
+        $processedTokens = [];
+
+        foreach ($rawTokens as $token) {
+            // 3. Dynamic Database Dictionary Lookup
+            // Check if this token exists as an Amharic term in our local table
+            $translation = DB::table('bilingual_dictionaries')
+                ->where('amharic_term', $token)
+                ->first();
+
+            if ($translation) {
+                // If found, swap the Amharic token for its English technical twin
+                $processedTokens[] = $translation->english_translation;
+            } else {
+                // Fallback: If it's already English or not in dictionary, pass it straight through
+                $processedTokens[] = $token;
+            }
+        }
+
+        return $processedTokens;
+    }
+}
