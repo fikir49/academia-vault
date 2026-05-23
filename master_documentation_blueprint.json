@@ -1,0 +1,22 @@
+{
+    "Project_Name": "Academia Vault",
+    "Target_Architecture": "Distributed Cross-Lingual Information Retrieval & Steganographic AI Network",
+    "Stack_Composition": {
+        "Frontend_Web": "Next.js (React, Tailwind CSS)",
+        "Backend_Relational_Core": "Laravel 11 (PHP, Eloquent ORM)",
+        "Microservices_Node": "Node.js (Express, Canvas, Crypto, LangChain Wrapper)",
+        "Mobile_Client": "Flutter (Dart, Riverpod State Layer)"
+    },
+    "Core_Directory_Code_Level_Map": {
+        "backend-server": {
+            "app/Http/Controllers/SearchController.php": "Orchestrates cross-lingual search tokens by routing Amharic user tokens to translation models before executing database retrieval queries.",
+            "app/Models/User.php": "Implements Eloquent lifecycle hooks to automatically mint sequential Vault Passport IDs upon student account registration validation.",
+            "database/migrations/": "Defines rigid tables for user attributes (Sex, Department, University ID), claims/patches, inverted index nodes, and bilingual dictionaries."
+        },
+        "node-file-processor": {
+            "server.js": "Main express service loop routing document streams to localized storage buckets and isolating intense background computational threads from Laravel.",
+            "services/ai_gatekeeper.js": "Handles language model wrappers executing semantic classification to balance syllabus resources across computing departments while isolating micro-assessment artifacts.",
+            "services/stego_cipher.js": "Processes raw file byte encapsulation and executes LSB steganographic embedding directly within image pixel matrices."
+        }
+    }
+}
