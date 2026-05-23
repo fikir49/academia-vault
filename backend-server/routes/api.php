@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\RegistrationController;
 
 // 1. The "Pulse" check
 Route::get('/v1/status', function () {
@@ -16,6 +17,7 @@ Route::get('/v1/status', function () {
 // 2. The Search Route (Cleaned up and simplified)
 Route::get('/v1/search', ['App\Http\Controllers\Api\SearchController', 'search']);
 // Temporary structural debugging gateway for data mapping validation
+Route::post('/v1/auth/biometric-register', [RegistrationController::class, 'register']);
 Route::get('/v1/debug-db-dump', function() {
     try {
         $allRows = \Illuminate\Support\Facades\DB::table('inverted_indices')->get();
