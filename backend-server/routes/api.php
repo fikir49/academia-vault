@@ -1,31 +1,19 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\RegistrationController;
-
-// 1. The "Pulse" check
-Route::get('/v1/status', function () {
+use App\Http\Controllers\API\AuthController;
+Route::get("/v1/status", function () {
     return response()->json([
-        'app_name' => 'Academia Vault',
-        'status' => 'Active',
-        'protocol' => 'Decentralized Mesh v1.0',
-        'server_time' => now()->toDateTimeString(),
+        "app_name" => "Academia Vault",
+        "status" => "Active",
+        "protocol" => "Decentralized Mesh v1.0",
+        "server_time" => now()->toDateTimeString(),
     ]);
 });
-
-// 2. The Search Route (Cleaned up and simplified)
-Route::get('/v1/search', ['App\Http\Controllers\Api\SearchController', 'search']);
-// Temporary structural debugging gateway for data mapping validation
-Route::post('/v1/auth/biometric-register', [RegistrationController::class, 'register']);
-Route::get('/v1/debug-db-dump', function() {
-    try {
-        $allRows = \Illuminate\Support\Facades\DB::table('inverted_indices')->get();
-        return response()->json([
-            'total_records_found' => $allRows->count(),
-            'raw_database_payload' => $allRows
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error_message' => $e->getMessage()], 500);
-    }
+Route::post("/v1/auth/login", [AuthController::class, "login"]);
+Route::post("/v1/auth/biometric-register", [RegistrationController::class, "register"]);
+Route::middleware("auth:sanctum")->group(function () {
+    Route::post("/v1/auth/logout", [AuthController::class, "logout"]);
+    Route::get("/v1/search", ["App\Http\Controllers\Api\SearchController", "search"]);
 });
