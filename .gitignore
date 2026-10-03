@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .aider*
+
+# Node dependencies
+node_modules/
+**/node_modules/
