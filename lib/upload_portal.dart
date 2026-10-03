@@ -250,7 +250,7 @@ class _UploadPortalState extends State<UploadPortal> {
                 title: const Text("Verified Privacy Mode", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 subtitle: const Text("Hides material within a cover image", style: TextStyle(fontSize: 11)),
                 value: _isSecureAccess,
-                activeColor: Colors.indigo,
+                activeThumbColor: Colors.indigo,
                 onChanged: (v) => setState(() => _isSecureAccess = v),
               ),
               if (_isSecureAccess) ...[
@@ -267,7 +267,7 @@ class _UploadPortalState extends State<UploadPortal> {
                 title: const Text("Project Showcase", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 subtitle: const Text("Feature this as a student technical project", style: TextStyle(fontSize: 11)),
                 value: _isProjectShowcase,
-                activeColor: Colors.deepPurple,
+                activeThumbColor: Colors.deepPurple,
                 onChanged: (v) => setState(() => _isProjectShowcase = v),
               ),
 

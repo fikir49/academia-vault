@@ -1,18 +1,15 @@
 import 'dart:ui';
+import 'dart:io';                       // Fixes: 'File' isn't defined at line 970
+import 'dart:math' as math;            // Fixes: Undefined name 'math' at lines 1013 & 1018
+import 'package:open_filex/open_filex.dart'; // Fixes: Undefined name 'OpenFilex' at line 971
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:local_auth/local_auth.dart';
-import 'dart:io';
-import 'dart:math' as math;
-import 'dart:typed_data';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
+
 import 'upload_portal.dart';
 import 'ranking_engine.dart';
-import 'security_engine.dart';
 import 'network_discovery.dart';
 
-// ACADEMIA VAULT - THE INTELLIGENT KNOWLEDGE STREAM
 enum UserStatus { foundation, contributor, administrator }
 
 class LearningInsight {
@@ -360,7 +357,7 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                   ),
                   Switch(
                     value: _currentStatus != UserStatus.foundation,
-                    activeColor: primaryColor,
+                    activeThumbColor: primaryColor,
                     onChanged: (v) {
                       setState(() => _currentStatus = v ? UserStatus.contributor : UserStatus.foundation);
                       _refreshStream();
@@ -972,21 +969,24 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
       _history.insert(0, "${insight.title} (${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')})");
     });
 
-    if (insight.vaultPath != null && insight.vaultPath!.isNotEmpty) {
-      await OpenFilex.open(insight.vaultPath);
+   final String? path = insight.vaultPath;
+    if (path != null && path.isNotEmpty && File(path).existsSync()) {
+      await OpenFilex.open(path);
     } else {
       if (mounted) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text(insight.title),
-            content: SingleChildScrollView(
-              child: Text(insight.textContent ?? "No additional document text content available."),
+            title: const Text('File Unavailable'),
+            content: Text(
+              path == null || path.isEmpty
+                  ? 'No local file path is associated with this vault item.'
+                  : 'The file could not be found at path: $path',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Close"),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
               ),
             ],
           ),
