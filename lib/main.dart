@@ -27,25 +27,40 @@ class LearningInsight {
   final String? vaultPath;
 
   LearningInsight({
-    required this.id, required this.title, required this.provider,
-    required this.department, this.matchRate = 0.0,
-    this.isPrivate = false, this.isProject = false,
-    this.textContent, this.vaultPath,
+    required this.id,
+    required this.title,
+    required this.provider,
+    required this.department,
+    this.matchRate = 0.0,
+    this.isPrivate = false,
+    this.isProject = false,
+    this.textContent,
+    this.vaultPath,
   });
 
   factory LearningInsight.fromMap(Map<dynamic, dynamic> map) => LearningInsight(
-    id: map['id'], title: map['title'], provider: map['author'] ?? "Academic Node",
-    department: map['topic'] ?? "General", matchRate: map['relevanceScore'] ?? 0.0,
-    isPrivate: map['isEncrypted'] ?? false, isProject: map['isMarketplace'] ?? false,
-    textContent: map['textContent'], vaultPath: map['vaultPath'],
-  );
+        id: map['id'],
+        title: map['title'],
+        provider: map['author'] ?? "Academic Node",
+        department: map['topic'] ?? "General",
+        matchRate: map['relevanceScore'] ?? 0.0,
+        isPrivate: map['isEncrypted'] ?? false,
+        isProject: map['isMarketplace'] ?? false,
+        textContent: map['textContent'],
+        vaultPath: map['vaultPath'],
+      );
 
   Map<String, dynamic> toMap() => {
-    'id': id, 'title': title, 'author': provider, 'topic': department,
-    'relevanceScore': matchRate, 'isEncrypted': isPrivate,
-    'isMarketplace': isProject, 'textContent': textContent,
-    'vaultPath': vaultPath,
-  };
+        'id': id,
+        'title': title,
+        'author': provider,
+        'topic': department,
+        'relevanceScore': matchRate,
+        'isEncrypted': isPrivate,
+        'isMarketplace': isProject,
+        'textContent': textContent,
+        'vaultPath': vaultPath,
+      };
 }
 
 void main() async {
@@ -57,6 +72,7 @@ void main() async {
 
 class AcademiaVault extends StatelessWidget {
   const AcademiaVault({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -73,6 +89,7 @@ class AcademiaVault extends StatelessWidget {
 
 class KnowledgeStream extends StatefulWidget {
   const KnowledgeStream({super.key});
+
   @override
   State<KnowledgeStream> createState() => _KnowledgeStreamState();
 }
@@ -83,14 +100,14 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
   final PeerDiscovery _peerDiscovery = PeerDiscovery();
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _pulseController;
-  
+
   List<LearningInsight> _insights = [];
   UserStatus _currentStatus = UserStatus.foundation;
   bool _isSidebarOpen = false;
   bool _isRanking = false;
   String _selectedDept = "All";
   String _searchQuery = "";
-  
+
   // REAL P2P NETWORK DATA
   int _activeNodesCount = 0;
   int _shardsHostingCount = 0;
@@ -116,7 +133,7 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
   Future<void> _initP2PNetwork() async {
     final nodeId = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
     await _peerDiscovery.startNode(nodeId);
-    
+
     _peerDiscovery.findPeers((service) {
       if (mounted) {
         setState(() {
@@ -145,7 +162,7 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
 
     final data = _vaultBox.get('items', defaultValue: []);
     List<LearningInsight> rawList = (data as List).map((e) => LearningInsight.fromMap(e)).toList();
-    
+
     List<LearningInsight> processedList = [];
     for (var insight in rawList) {
       double matchRate = insight.matchRate;
@@ -155,10 +172,15 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
         matchRate = (insight.matchRate * 0.2) + (localScore * 0.8);
       }
       processedList.add(LearningInsight(
-        id: insight.id, title: insight.title, provider: insight.provider,
-        department: insight.department, matchRate: matchRate,
-        isPrivate: insight.isPrivate, isProject: insight.isProject,
-        textContent: insight.textContent, vaultPath: insight.vaultPath,
+        id: insight.id,
+        title: insight.title,
+        provider: insight.provider,
+        department: insight.department,
+        matchRate: matchRate,
+        isPrivate: insight.isPrivate,
+        isProject: insight.isProject,
+        textContent: insight.textContent,
+        vaultPath: insight.vaultPath,
       ));
     }
 
@@ -169,13 +191,20 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
         if (_insights.isEmpty) {
           _insights = [
             LearningInsight(
-              id: "1", title: "Information Retrieval Mastery", provider: "Dr. Kebede", department: "Computer Science", 
-              matchRate: 0.98, textContent: "Information retrieval, vectors, search engines, indexing, tf-idf, cosine similarity."
-            ),
+                id: "1",
+                title: "Information Retrieval Mastery",
+                provider: "Dr. Kebede",
+                department: "Computer Science",
+                matchRate: 0.98,
+                textContent: "Information retrieval, vectors, search engines, indexing, tf-idf, cosine similarity."),
             LearningInsight(
-              id: "2", title: "Advanced Logic Systems", provider: "Prof. Sarah", department: "Engineering", 
-              matchRate: 0.85, isPrivate: true, textContent: "Logic gates, boolean algebra, circuits, computer architecture, digital systems."
-            ),
+                id: "2",
+                title: "Advanced Logic Systems",
+                provider: "Prof. Sarah",
+                department: "Engineering",
+                matchRate: 0.85,
+                isPrivate: true,
+                textContent: "Logic gates, boolean algebra, circuits, computer architecture, digital systems."),
           ];
         }
         _isRanking = false;
@@ -205,7 +234,6 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               ),
             ),
           ),
-          
           if (_isSidebarOpen)
             Positioned.fill(
               child: GestureDetector(
@@ -213,7 +241,6 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                 child: Container(color: Colors.black12),
               ),
             ),
-          
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOutExpo,
@@ -228,7 +255,6 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               ),
             ),
           ),
-
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOutExpo,
@@ -258,12 +284,10 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
             CircleAvatar(radius: 30, backgroundColor: primaryColor, child: const Icon(Icons.person, color: Colors.white)),
             const SizedBox(height: 20),
             const Text("Student Profile", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const Text("Department: CS", style: TextStyle(color: Colors.black54, fontSize: 12)),
+            const Text("Department: IS", style: TextStyle(color: Colors.black54, fontSize: 12)),
             const Divider(height: 40),
-            
             Text("DECENTRALIZED NETWORK", style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: primaryColor, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
-            
             Container(
               height: 120,
               width: double.infinity,
@@ -286,7 +310,6 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
             _networkStat(Icons.hub_outlined, "Active Nodes", "$_activeNodesCount", primaryColor),
             _networkStat(Icons.grid_3x3, "Shards Hosting", "$_shardsHostingCount", primaryColor),
             _networkStat(Icons.security_update_good, "Network Health", "${(_networkHealth * 100).toInt()}%", primaryColor),
-            
             const Divider(height: 40),
             _sidebarItem(Icons.bookmark_outline, "My Saved Items", primaryColor, () {
               setState(() {
@@ -315,7 +338,6 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               );
             }),
             const Divider(height: 40),
-            
             Text("ACCOUNT PROFILE", style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: primaryColor, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             Container(
@@ -329,10 +351,10 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_currentStatus == UserStatus.foundation ? "Student Access" : "Lecturer Access", 
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text(_currentStatus == UserStatus.foundation ? "View & Verify" : "Certify & Distribute", 
-                          style: const TextStyle(fontSize: 10, color: Colors.black45)),
+                        Text(_currentStatus == UserStatus.foundation ? "Student Access" : "Lecturer Access",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(_currentStatus == UserStatus.foundation ? "View & Verify" : "Certify & Distribute",
+                            style: const TextStyle(fontSize: 10, color: Colors.black45)),
                       ],
                     ),
                   ),
@@ -347,14 +369,16 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                 ],
               ),
             ),
-            
             const SizedBox(height: 20),
             if (_currentStatus == UserStatus.contributor)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => setState(() => _currentStatus = UserStatus.administrator),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   child: const Text("Elevate to Admin Terminal", style: TextStyle(fontSize: 10)),
                 ),
               ),
@@ -366,36 +390,36 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
   }
 
   Widget _networkStat(IconData icon, String label, String value, Color primaryColor) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.black38),
-        const SizedBox(width: 12),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-        const Spacer(),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primaryColor)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.black38),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            const Spacer(),
+            Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: primaryColor)),
+          ],
+        ),
+      );
 
   Widget _sidebarItem(IconData icon, String label, Color primaryColor, VoidCallback onTap, {bool isActive = false}) => InkWell(
-    onTap: onTap,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      child: Row(children: [
-        Icon(icon, size: 20, color: isActive ? Colors.green : primaryColor), 
-        const SizedBox(width: 15), 
-        Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: isActive ? Colors.green : Colors.black87))
-      ]),
-    ),
-  );
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          child: Row(children: [
+            Icon(icon, size: 20, color: isActive ? Colors.green : primaryColor),
+            const SizedBox(width: 15),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: isActive ? Colors.green : Colors.black87))
+          ]),
+        ),
+      );
 
   Widget _buildDashboard(Color primaryColor) {
     final filteredInsights = _insights.where((i) {
       if (_showingSavedOnly && !_savedItemIds.contains(i.id)) return false;
       final matchesDept = _selectedDept == "All" || i.department == _selectedDept;
-      final matchesSearch = i.title.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-                           i.provider.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = i.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          i.provider.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesDept && matchesSearch;
     }).toList();
 
@@ -404,16 +428,15 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
       child: Container(
         decoration: BoxDecoration(
           color: _isSidebarOpen ? Colors.transparent : null,
-          boxShadow: _isSidebarOpen ? [BoxShadow(color: Colors.black12, blurRadius: 40)] : null,
+          boxShadow: _isSidebarOpen ? [const BoxShadow(color: Colors.black12, blurRadius: 40)] : null,
         ),
         child: SafeArea(
-          bottom: false, // Fix potential overflow at bottom
+          bottom: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildAppBar(primaryColor),
-              if (_isRanking) 
-                LinearProgressIndicator(minHeight: 2, backgroundColor: Colors.transparent, color: primaryColor),
+              if (_isRanking) LinearProgressIndicator(minHeight: 2, backgroundColor: Colors.transparent, color: primaryColor),
               Expanded(
                 child: CustomScrollView(
                   slivers: [
@@ -430,7 +453,9 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
                             children: [
                               const Text("SAVED_RESULTS", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Colors.green)),
                               const Spacer(),
-                              TextButton(onPressed: () => setState(() => _showingSavedOnly = false), child: const Text("Show All", style: TextStyle(fontSize: 10))),
+                              TextButton(
+                                  onPressed: () => setState(() => _showingSavedOnly = false),
+                                  child: const Text("Show All", style: TextStyle(fontSize: 10))),
                             ],
                           ),
                         ),
@@ -513,7 +538,8 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               ),
             ),
             Positioned(
-              left: 20, top: 15,
+              left: 20,
+              top: 15,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -523,13 +549,14 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               ),
             ),
             Positioned(
-              right: 20, bottom: 15,
+              right: 20,
+              bottom: 15,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.circle, size: 8, color: Colors.green),
                   const SizedBox(width: 5),
-                  Text("STREAM_ACTIVE", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green)),
+                  const Text("STREAM_ACTIVE", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
             )
@@ -704,16 +731,20 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("ADMIN_SYLLABUS_CONTROL", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.deepPurple, letterSpacing: 1)),
+            const Text("ADMIN_SYLLABUS_CONTROL",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Colors.deepPurple, letterSpacing: 1)),
             const SizedBox(height: 20),
-            const Text("Update the Global Syllabus to trigger a network-wide re-ranking of all academic materials based on new learning objectives.", style: TextStyle(fontSize: 11, color: Colors.black54)),
+            const Text(
+                "Update the Global Syllabus to trigger a network-wide re-ranking of all academic materials based on new learning objectives.",
+                style: TextStyle(fontSize: 11, color: Colors.black54)),
             const SizedBox(height: 25),
             TextField(
               controller: ctrl,
               maxLines: 4,
               style: const TextStyle(fontSize: 13, height: 1.5),
               decoration: InputDecoration(
-                filled: true, fillColor: Colors.black.withValues(alpha: 0.02),
+                filled: true,
+                fillColor: Colors.black.withValues(alpha: 0.02),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.black12)),
               ),
@@ -723,10 +754,13 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                 onPressed: () {
                   setState(() => _currentSyllabus = ctrl.text);
-                  _refreshStream(); 
+                  _refreshStream();
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Global Syllabus Updated. Materials Re-ranked.")));
                 },
@@ -757,19 +791,18 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("$greeting, Scholar.", 
-                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.5)),
-                  const Text("The highest study matches for your department:", 
-                    style: TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text("$greeting, Scholar.",
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.5)),
+                  const Text("The highest study matches for your department:",
+                      style: TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500)),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]
-                ),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                 child: const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
               )
             ],
@@ -780,87 +813,137 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
   }
 
   Widget _buildAnimatedInsightCard(LearningInsight insight, int index, Color primaryColor) {
-    return TweenAnimationBuilder(
-      duration: Duration(milliseconds: 600 + (index * 100)),
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: 400 + (index * 100)),
       tween: Tween<double>(begin: 0, end: 1),
-      builder: (ctx, double value, child) {
+      builder: (ctx, value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 50 * (1 - value)),
+            offset: Offset(0, 30 * (1 - value)),
             child: child,
           ),
         );
       },
-      child: InkWell(
-        onTap: () => _decryptAndOpen(insight, primaryColor),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 20),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withValues(alpha: 0.06),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Padding(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white),
-            boxShadow: [
-              BoxShadow(
-                color: primaryColor.withValues(alpha: 0.12),
-                blurRadius: 25,
-                offset: const Offset(0, 15),
-              ),
-            ],
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(child: _badge(insight.department, primaryColor.withValues(alpha: 0.1), primaryColor)),
-                  Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          icon: Icon(_savedItemIds.contains(insight.id) ? Icons.bookmark : Icons.bookmark_border, size: 16, color: primaryColor),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => setState(() {
-                            if (_savedItemIds.contains(insight.id)) {
-                              _savedItemIds.remove(insight.id);
-                            } else {
-                              _savedItemIds.add(insight.id);
-                            }
-                          }),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                insight.department.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: primaryColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            if (insight.isPrivate) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.lock_outline, size: 14, color: Colors.amber),
+                            ],
+                            if (insight.isProject) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.code_rounded, size: 14, color: Colors.indigo),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.analytics_outlined, size: 10, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            "${(insight.matchRate * 100).toInt()}% Match",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.green),
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 10),
+                        Text(
+                          insight.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Provided by ${insight.provider}",
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
                         ),
                       ],
                     ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "${(insight.matchRate * 100).toInt()}% Match",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(insight.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 4),
-              Text("Provided by ${insight.provider}", style: const TextStyle(color: Colors.black38, fontSize: 11)),
-              const Divider(height: 30),
+              const SizedBox(height: 15),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (insight.isPrivate) const Icon(Icons.lock_outline, size: 14, color: Colors.orange),
-                  if (insight.isPrivate) const SizedBox(width: 5),
-                  Text(insight.isPrivate ? "Secure Access Only" : "Public Material", style: TextStyle(color: insight.isPrivate ? Colors.orange : Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  Icon(Icons.arrow_right_alt, color: primaryColor),
+                  IconButton(
+                    icon: Icon(
+                      _savedItemIds.contains(insight.id) ? Icons.bookmark : Icons.bookmark_outline,
+                      color: _savedItemIds.contains(insight.id) ? primaryColor : Colors.black38,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (_savedItemIds.contains(insight.id)) {
+                          _savedItemIds.remove(insight.id);
+                        } else {
+                          _savedItemIds.add(insight.id);
+                        }
+                      });
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: Icon(insight.isPrivate ? Icons.lock_open : Icons.menu_book, size: 16),
+                    label: Text(insight.isPrivate ? "Authenticate & Decrypt" : "Access Material", style: const TextStyle(fontSize: 12)),
+                    onPressed: () => _handleAccessInsight(insight),
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -868,120 +951,89 @@ class _KnowledgeStreamState extends State<KnowledgeStream> with TickerProviderSt
     );
   }
 
-  Widget _badge(String text, Color bg, Color textCol) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-    child: Text(text, style: TextStyle(color: textCol, fontSize: 9, fontWeight: FontWeight.bold)),
-  );
-
-  Future<void> _decryptAndOpen(LearningInsight insight, Color primaryColor) async {
-    if (insight.id == "1" || insight.id == "2") {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text("DEMO_MODE: This is a placeholder. Material extraction requires a real uploaded file."),
-        backgroundColor: primaryColor,
-      ));
-      return;
-    }
-
+  Future<void> _handleAccessInsight(LearningInsight insight) async {
     if (insight.isPrivate) {
-      try {
-        final bool didAuth = await _auth.authenticate(
-          localizedReason: 'AUTHORIZE ACCESS TO ENCRYPTED KNOWLEDGE',
-          options: const AuthenticationOptions(biometricOnly: true, stickyAuth: true),
-        );
-        if (!didAuth) return;
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("BIOMETRIC_FAILURE: $e")));
+      final bool authenticated = await _auth.authenticate(
+        localizedReason: 'Authenticate to access encrypted academic material',
+        options: const AuthenticationOptions(biometricOnly: true),
+      );
+
+      if (!authenticated) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Authentication failed. Access denied.")),
+          );
+        }
         return;
       }
     }
 
-    if (!mounted) return;
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.95),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) {
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.security, color: primaryColor, size: 50),
-                const SizedBox(height: 30),
-                const Text("VAULT PROTOCOL: PIXEL_DECONSTRUCTION", style: TextStyle(color: Colors.white24, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                SizedBox(width: 150, child: LinearProgressIndicator(backgroundColor: Colors.white10, color: primaryColor, minHeight: 1)),
-                const SizedBox(height: 20),
-                Text("SEARCHING IMAGE BYTES FOR SHARDS...", style: TextStyle(color: primaryColor, fontSize: 8, fontWeight: FontWeight.w900)),
-              ],
+    setState(() {
+      _history.insert(0, "${insight.title} (${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')})");
+    });
+
+    if (insight.vaultPath != null && insight.vaultPath!.isNotEmpty) {
+      await OpenFilex.open(insight.vaultPath);
+    } else {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(insight.title),
+            content: SingleChildScrollView(
+              child: Text(insight.textContent ?? "No additional document text content available."),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Close"),
+              ),
+            ],
           ),
         );
-      },
-    );
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _history.insert(0, "Opened: ${insight.title} (${DateTime.now().hour}:${DateTime.now().minute})"));
-
-      final List items = _vaultBox.get('items', defaultValue: []);
-      final rawMatch = items.firstWhere((e) => e['id'] == insight.id, orElse: () => null);
-      if (rawMatch == null || rawMatch['vaultPath'] == null) throw Exception("SHARD_SOURCE_NOT_FOUND");
-      final file = File(rawMatch['vaultPath']);
-      
-      if (insight.isPrivate) {
-        final Uint8List? bytes = await SteganoEngine.extractKnowledge(file);
-        if (bytes != null) {
-          final tempDir = await getTemporaryDirectory();
-          final tempFile = File('${tempDir.path}/xtr_${insight.id}.pdf');
-          await tempFile.writeAsBytes(bytes);
-          if (mounted) Navigator.pop(context);
-          await OpenFilex.open(tempFile.path);
-        } else {
-          throw Exception("CHECKSUM_MISMATCH");
-        }
-      } else {
-        if (mounted) Navigator.pop(context);
-        await OpenFilex.open(file.path);
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("VAULT_ERROR: $e"), backgroundColor: Colors.redAccent));
       }
     }
   }
 }
 
 class NetworkHeatmapPainter extends CustomPainter {
-  final int nodeCount;
-  final double animationValue;
-  final Color themeColor;
-  NetworkHeatmapPainter(this.nodeCount, this.animationValue, this.themeColor);
+  final int activeNodes;
+  final double pulseValue;
+  final Color primaryColor;
+
+  NetworkHeatmapPainter(this.activeNodes, this.pulseValue, this.primaryColor);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final random = math.Random(42);
-    final nodes = List.generate(nodeCount + 5, (index) => Offset(random.nextDouble() * size.width, random.nextDouble() * size.height));
-    final paint = Paint()..color = themeColor.withValues(alpha: 0.2)..strokeWidth = 1.0;
+    final paint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < nodes.length; i++) {
-      for (int j = i + 1; j < nodes.length; j++) {
-        final dist = (nodes[i] - nodes[j]).distance;
-        if (dist < 60) canvas.drawLine(nodes[i], nodes[j], paint..color = themeColor.withValues(alpha: (1 - dist / 60) * 0.2));
-      }
+    final linePaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.2)
+      ..strokeWidth = 1.0;
+
+    final nodesCount = math.max(3, activeNodes + 2);
+    final List<Offset> points = [];
+
+    for (int i = 0; i < nodesCount; i++) {
+      final dx = (size.width / (nodesCount + 1)) * (i + 1);
+      final dy = (size.height / 2) + math.sin((i + 1) + pulseValue * math.pi * 2) * 15;
+      points.add(Offset(dx, dy));
     }
 
-    for (var node in nodes) {
-      final pulse = math.sin(animationValue * math.pi) * 4;
-      canvas.drawCircle(node, 3 + pulse, Paint()..color = themeColor.withValues(alpha: 0.6));
-      canvas.drawCircle(node, (3 + pulse) * 2, Paint()..color = themeColor.withValues(alpha: 0.1));
+    for (int i = 0; i < points.length - 1; i++) {
+      canvas.drawLine(points[i], points[i + 1], linePaint);
+    }
+
+    for (var pt in points) {
+      canvas.drawCircle(pt, 4 + (pulseValue * 3), paint);
+      canvas.drawCircle(pt, 2, Paint()..color = primaryColor);
     }
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant NetworkHeatmapPainter oldDelegate) {
+    return oldDelegate.pulseValue != pulseValue || oldDelegate.activeNodes != activeNodes;
+  }
 }
