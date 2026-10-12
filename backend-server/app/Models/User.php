@@ -25,6 +25,7 @@ class User extends Authenticatable
         'department',
         'sex',
         'age',
+        'biometric_mesh',
     ];
 
     /**
@@ -51,44 +52,40 @@ class User extends Authenticatable
      * The "booted" method of the model.
      * This acts as an internal listener hook for database lifecycle actions.
      */
-    protected static function booted(): void
-    {
-        static::creating(function (User $user) {
-            // 1. Only run this if a custom vault_id hasn't been manually assigned yet
-            if (empty($user->vault_id)) {
-                
-                // 2. Extract context parameters (Fallback to 'GEN' if department is missing)
-                $deptCode = strtoupper($user->department ?? 'GEN'); 
-                $yearSuffix = date('y'); // Returns '26' for 2026
-                
-                // 3. Look at the database to find the last registered user from the exact same department and year
-                $lastUser = self::where('department', $user->department)
-                                ->where('vault_id', 'like', "BDU-{$deptCode}-{$yearSuffix}-%")
-                                ->orderBy('id', 'desc')
-                                ->first();
+  protected static function booted(): void
+{
+    static::creating(function (User $user) {
+        if (empty($user->vault_id)) {
+            // Map known department names to clean shortcodes
+            $deptMap = [
+                'Information Systems' => 'IS',
+                'Computer Science'    => 'CS',
+                'Information Technology' => 'IT',
+            ];
 
-                $nextSequence = 1;
+            $rawDept = $user->department ?? 'GEN';
+            $deptCode = $deptMap[$rawDept] ?? strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $rawDept));
+            $yearSuffix = date('y');
 
-                if ($lastUser && $lastUser->vault_id) {
-                    // Extract the number from the end of the last vault_id string (e.g., '0049' becomes 49)
-                    $parts = explode('-', $lastUser->vault_id);
-                    $lastSequenceNumber = (int) end($parts);
-                    $nextSequence = $lastSequenceNumber + 1;
-                }
+            $lastUser = self::where('department', $user->department)
+                            ->where('vault_id', 'like', "BDU-{$deptCode}-{$yearSuffix}-%")
+                            ->orderBy('id', 'desc')
+                            ->first();
 
-                // 4. Pad the number out with zeros so it looks clean (e.g., 5 becomes '0005')
-                $paddedSequence = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+            $nextSequence = 1;
 
-                // 5. Mint the final deterministic identity code string
-                $user->vault_id = "BDU-{$deptCode}-{$yearSuffix}-{$paddedSequence}";
+            if ($lastUser && $lastUser->vault_id) {
+                $parts = explode('-', $lastUser->vault_id);
+                $lastSequenceNumber = (int) end($parts);
+                $nextSequence = $lastSequenceNumber + 1;
             }
-        });
-    }
 
-    /**
-     * Establish a structural relationship with the User Claims table.
-     */
-    public function claims()
+            $paddedSequence = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+            $user->vault_id = "BDU-{$deptCode}-{$yearSuffix}-{$paddedSequence}";
+        }
+    });
+}
+       public function claims()
     {
         return $this->hasMany(UserClaim::class);
     }

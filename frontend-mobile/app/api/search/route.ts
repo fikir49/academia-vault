@@ -1,29 +1,39 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const query = searchParams.get('query') || '';
-        const dept = request.headers.get('X-Department') || 'Information Systems';
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const query = searchParams.get('query');
 
-        // Speak directly to Laravel over the internal loopback container network
-        const response = await fetch(`http://127.0.0.1:8000/api/v1/search?query=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: {
-                'X-Department': dept,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
+  if (!query) {
+    return NextResponse.json({ success: true, results: { bilingual_matches: [], lexical_matches: [], fts_matches: [] } });
+  }
 
-        if (!response.ok) {
-            return NextResponse.json({ vault_results: [] }, { status: response.status });
-        }
+  const userDept = request.headers.get('x-department') || 'Information Systems';
+  const userClearance = request.headers.get('x-clearance-level') || '2';
 
-        const data = await response.json();
-        return NextResponse.json(data);
-    } catch (error) {
-        console.error("Proxy failure:", error);
-        return NextResponse.json({ vault_results: [] }, { status: 500 });
+  try {
+    // Forward as POST to Laravel's cross-lingual Amharic-English pipeline
+    const response = await fetch('http://127.0.0.1:8000/api/search/cross-lingual', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Department': userDept,
+        'X-Clearance-Level': userClearance,
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Laravel backend returned status ${response.status}`);
     }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Cross-lingual proxy error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to connect to cross-lingual backend IR service.' },
+      { status: 500 }
+    );
+  }
 }
