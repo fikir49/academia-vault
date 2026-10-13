@@ -6,10 +6,6 @@ use Illuminate\Support\Facades\DB;
 
 class AmharicTextProcessor
 {
-    /**
-     * Common Amharic prefixes for morphological stripping (ordered by length).
-     * Note: Standalone 'ተ' is excluded to prevent over-stemming roots like 'ተዛማጅ'.
-     */
     protected array $prefixes = [
         'ስለሚሆን', 'እንደሚሆን', 'ከሚከተሉት', 'በሚከተሉት',
         'ስለሚ', 'እንደሚ', 'በየ', 'ከየ', 'ለየ',
@@ -18,19 +14,25 @@ class AmharicTextProcessor
         'የ', 'በ', 'ለ', 'ከ', 'ወደ', 'እስከ'
     ];
 
-    /**
-     * Common Amharic suffixes for morphological stripping (ordered by length).
-     */
     protected array $suffixes = [
         'ዎቻቸውን', 'ዎቻችንን', 'ዎቻችሁን',
-        'ዎችን', 'ዎችንም', 'ዎችም', 'ዎቻችን', 'ዎቻችሁ', 'ዎቻቸው',
-        'ነቶች', 'ዎች', 'ችን', 'ችሁ', 'ቸው', 'ነት', 'ያዊ', 'ኛ', 'አችን', 'አቸው'
+        'ዎችንም', 'ዎችን', 'ዎችም', 'ዎቻችን', 'ዎቻችሁ', 'ዎቻቸው',
+        'ነቶች', 'ጆች', 'ዎች', 'ኦች', 'ችን', 'ችሁ', 'ቸው', 'ነት', 'ያዊ', 'ኛ', 'አችን', 'አቸው'
     ];
 
     public function normalize(string $text): string
     {
         if (empty(trim($text))) {
             return '';
+        }
+
+        if (!class_exists(\Normalizer::class)) {
+            throw new \RuntimeException('The intl PHP extension is required for NFC normalization.');
+        }
+
+        $text = \Normalizer::normalize($text, \Normalizer::FORM_C);
+        if ($text === false) {
+            throw new \InvalidArgumentException('The input could not be NFC normalized.');
         }
 
         $homophoneMap = [
@@ -45,55 +47,43 @@ class AmharicTextProcessor
 
         $normalized = strtr($text, $homophoneMap);
         $normalized = preg_replace('/[፡።፤፥፦፧፨፠]/u', ' ', $normalized);
-        return trim(preg_replace('/\s+/u', ' ', $normalized));
+        return trim((string) preg_replace('/\s+/u', ' ', $normalized));
     }
 
-    /**
-     * Iteratively strip prefixes and suffixes until root stabilizes.
-     */
     public function stem(string $word): string
     {
-        $normalizedWord = $this->normalize($word);
+        $word = $this->normalize($word);
 
-        if (mb_strlen($normalizedWord, 'UTF-8') <= 3) {
-            return $normalizedWord;
-        }
-
-        $stemmed = $normalizedWord;
         $changed = true;
-
-        while ($changed && mb_strlen($stemmed, 'UTF-8') > 3) {
+        while ($changed && mb_strlen($word, 'UTF-8') > 3) {
             $changed = false;
 
-            // Strip Prefixes
             foreach ($this->prefixes as $prefix) {
-                if (mb_strpos($stemmed, $prefix, 0, 'UTF-8') === 0) {
-                    $candidate = mb_substr($stemmed, mb_strlen($prefix, 'UTF-8'), null, 'UTF-8');
-                    if (mb_strlen($candidate, 'UTF-8') >= 3) {
-                        $stemmed = $candidate;
-                        $changed = true;
-                        break;
-                    }
+                $prefixLength = mb_strlen($prefix, 'UTF-8');
+                if (mb_strpos($word, $prefix, 0, 'UTF-8') === 0
+                    && mb_strlen($word, 'UTF-8') - $prefixLength >= 3) {
+                    $word = mb_substr($word, $prefixLength, null, 'UTF-8');
+                    $changed = true;
+                    break;
                 }
             }
 
-            // Strip Suffixes
             foreach ($this->suffixes as $suffix) {
                 $suffixLength = mb_strlen($suffix, 'UTF-8');
-                $stemmedLength = mb_strlen($stemmed, 'UTF-8');
-
-                if ($stemmedLength > $suffixLength && mb_substr($stemmed, -$suffixLength, null, 'UTF-8') === $suffix) {
-                    $candidate = mb_substr($stemmed, 0, $stemmedLength - $suffixLength, 'UTF-8');
-                    if (mb_strlen($candidate, 'UTF-8') >= 3) {
-                        $stemmed = $candidate;
-                        $changed = true;
-                        break;
-                    }
+                $wordLength = mb_strlen($word, 'UTF-8');
+                if ($wordLength - $suffixLength < 3
+                    || mb_substr($word, -$suffixLength, null, 'UTF-8') !== $suffix) {
+                    continue;
                 }
+
+                $stem = mb_substr($word, 0, $wordLength - $suffixLength, 'UTF-8');
+                $word = $suffix === 'ጆች' ? $stem . 'ጅ' : $stem;
+                $changed = true;
+                break;
             }
         }
 
-        return $stemmed;
+        return trim($word);
     }
 
     public function processAndTranslate(string $amharicQuery): array
@@ -112,14 +102,14 @@ class AmharicTextProcessor
                 ->where('amharic_word', $word)
                 ->value('english_translation');
 
-            // 2. Fallback to stemmed root
+            // 2. Fallback to stemmed root exact match
             if (!$translation && $stemmedWord !== $word) {
                 $translation = DB::table('bilingual_dictionaries')
                     ->where('amharic_word', $stemmedWord)
                     ->value('english_translation');
             }
 
-            // 3. Fallback to LIKE match on stemmed root
+            // 3. Fallback to wildcard LIKE match on stemmed root
             if (!$translation && $stemmedWord !== $word) {
                 $translation = DB::table('bilingual_dictionaries')
                     ->where('amharic_word', 'LIKE', '%' . $stemmedWord . '%')
@@ -129,7 +119,7 @@ class AmharicTextProcessor
             $translatedTerms[] = [
                 'original' => $word,
                 'stemmed' => $stemmedWord,
-                'english_translation' => $translation ?? $word
+                'english_translation' => $translation ?? $stemmedWord
             ];
         }
 

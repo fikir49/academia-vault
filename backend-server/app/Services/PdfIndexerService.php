@@ -92,51 +92,75 @@ class PdfIndexerService
      * Intelligent Edge Extractor Algorithm
      * Ranks candidate sentences based on term density, sentence structure, and definitional semantic score.
      */
-    private function extractSmartDefinition(array $sentences, string $term): string
+  private function extractSmartDefinition(array $sentences, string $term): ?string
     {
         $bestSentence = null;
         $highestScore = -1.0;
+        $lowerTerm = mb_strtolower(trim($term), 'UTF-8');
+
+        // Ignore meaningless single-word queries or stopwords
+        $stopwords = ['is', 'are', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'it', 'by', 'of', 'and', 'or'];
+        if (in_array($lowerTerm, $stopwords) || mb_strlen($lowerTerm, 'UTF-8') < 2) {
+            return null;
+        }
 
         foreach ($sentences as $sentence) {
-            $cleanSentence = trim(str_replace(["\r", "\n"], ' ', $sentence));
+            $cleanSentence = trim(str_replace(["\r", "\n", "\t"], ' ', $sentence));
             $lowerSentence = mb_strtolower($cleanSentence, 'UTF-8');
 
-            // Must contain the target term
-            if (mb_strpos($lowerSentence, $term) === false) {
+            // 1. BLACKLIST FILTER: Skip TOC, headers, cover pages, and short garbage
+            if (
+                preg_match('/^(part|chapter|section|table of contents|executive summary|introduction|\d+\.)/ui', $cleanSentence) ||
+                mb_strlen($cleanSentence, 'UTF-8') < 40 || 
+                mb_strlen($cleanSentence, 'UTF-8') > 400
+            ) {
                 continue;
             }
 
-            // Reject sentences that are too short (e.g., titles, headers) or excessively long garbage text
-            $charCount = mb_strlen($cleanSentence, 'UTF-8');
-            if ($charCount < 25 || $charCount > 350) {
-                continue;
+            // 2. PHRASE MATCHING: The sentence must contain the exact search phrase or major sub-terms
+            if (mb_strpos($lowerSentence, $lowerTerm) === false) {
+                // If multi-word phrase, check if at least 70% of the significant words are present
+                $termWords = array_filter(explode(' ', $lowerTerm), fn($w) => mb_strlen($w) > 3);
+                if (count($termWords) > 1) {
+                    $matchedCount = 0;
+                    foreach ($termWords as $tw) {
+                        if (mb_strpos($lowerSentence, $tw) !== false) $matchedCount++;
+                    }
+                    if (($matchedCount / count($termWords)) < 0.7) {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
             }
 
-            // Scoring Factor 1: Term Density Score
-            $termMatches = mb_substr_count($lowerSentence, $term);
-            $densityScore = ($termMatches * mb_strlen($term, 'UTF-8')) / $charCount;
+            // 3. DEFINITIONAL PATTERN SCORING (The "Is it a definition?" test)
+            $definitionalScore = 0.0;
 
-            // Scoring Factor 2: Definitional Structure Indicators (Semantic Signals)
-            $semanticBonus = 0.0;
-            if (preg_match('/\b(is|are|defined as|refers to|means|denotes|consists of|ማለት|ነው|ይሆናል|ይወክላል)\b/ui', $lowerSentence)) {
-                $semanticBonus += 0.5;
+            // High confidence definitional triggers (English & Amharic)
+            if (preg_match('/\b(is defined as|refers to|means|denotes|consists of|is a type of|represents|ማለት|ነው|ይወክላል|የሚለውን ይገልፃል)\b/ui', $lowerSentence)) {
+                $definitionalScore += 2.5;
             }
 
-            // Scoring Factor 3: Sentence Position Preference (Definitions usually start sentences)
-            $positionBonus = 0.0;
-            if (mb_strpos($lowerSentence, $term) < 30) {
-                $positionBonus += 0.2;
+            // Medium confidence structural proximity (Term appears near the beginning of a explanatory sentence)
+            $termPosition = mb_strpos($lowerSentence, $lowerTerm);
+            if ($termPosition !== false && $termPosition < 50) {
+                $definitionalScore += 1.0;
             }
 
-            // Composite Intelligence Score
-            $totalScore = $densityScore + $semanticBonus + $positionBonus;
+            // Penalty for question marks or conversational filler
+            if (mb_strpos($lowerSentence, '?') !== false) {
+                $definitionalScore -= 1.0;
+            }
 
-            if ($totalScore > $highestScore) {
-                $highestScore = $totalScore;
+            // If it scores higher than previous candidates, keep it
+            if ($definitionalScore > $highestScore) {
+                $highestScore = $definitionalScore;
                 $bestSentence = $cleanSentence;
             }
         }
 
-        return $bestSentence ?? "Technical context extracted for {$term}.";
+        // If no strict definitional sentence found, return null instead of a garbage snippet
+        return $highestScore > 0 ? $bestSentence : null;
     }
-}
+    }

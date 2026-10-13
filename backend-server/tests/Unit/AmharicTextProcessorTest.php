@@ -28,9 +28,19 @@ class AmharicTextProcessorTest extends TestCase
 
     public function test_stems_amharic_affixes(): void
     {
-        // Strips prefix 'ስለ' and suffix 'ዎች' from 'ስለተዛማጅነቶች'
         $stemmed = $this->processor->stem('ስለተዛማጅነቶች');
         $this->assertEquals('ተዛማጅ', $stemmed);
+    }
+
+    public function test_stems_compound_clitic_and_plural_allomorph(): void
+    {
+        $this->assertSame('ተዛማጅ', $this->processor->stem('ስለተዛማጆች'));
+    }
+
+    public function test_stems_multiple_suffix_layers(): void
+    {
+        $this->assertSame('ተማሪ', $this->processor->stem('ተማሪዎችን'));
+        $this->assertSame('መረጃ', $this->processor->stem('የመረጃዎች'));
     }
 
     public function test_translates_affixed_amharic_word_to_english(): void
@@ -38,5 +48,13 @@ class AmharicTextProcessorTest extends TestCase
         $result = $this->processor->processAndTranslate('ስለተዛማጅነቶች');
         
         $this->assertEquals('relevance', $result['terms'][0]['english_translation']);
+    }
+
+    public function test_translates_compound_clitic_query_to_english(): void
+    {
+        $result = $this->processor->processAndTranslate('ስለተዛማጆች');
+
+        $this->assertSame('ተዛማጅ', $result['terms'][0]['stemmed']);
+        $this->assertSame('relevance', $result['terms'][0]['english_translation']);
     }
 }
